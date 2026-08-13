@@ -32,21 +32,33 @@ import {
   Gauge,
   Fuel,
   Shield,
+  X,
+  Save,
+  Send,
+  Plane,
 } from "lucide-react";
 
 // Types
 interface Transfer {
   id: string;
   customer: string;
+  customerPhone: string;
   vehicle: string;
   vehiclePlate: string;
   driver: string;
+  driverPhone: string;
   pickup: string;
   dropoff: string;
   dateTime: string;
   pax: number;
+  distance: number;
+  luggage: number;
   cost: number;
+  currency: string;
+  paymentStatus: "pending" | "advance" | "partial" | "paid";
+  transferType: "airport_transfer" | "city_tour" | "intercity" | "hourly" | "other";
   status: "assigned" | "completed" | "cancelled" | "in-progress";
+  notes?: string;
 }
 
 interface Vehicle {
@@ -73,66 +85,101 @@ const mockTransfers: Transfer[] = [
   {
     id: "TRF-0067",
     customer: "Fatima Malik",
+    customerPhone: "+968 9123 4567",
     vehicle: "Toyota Hiace",
     vehiclePlate: "OM 1234",
     driver: "Saeed Al-Balushi",
+    driverPhone: "+968 9123 4567",
     pickup: "MCT Airport",
     dropoff: "Grand Hyatt Muscat",
     dateTime: "2024-08-15 14:30",
     pax: 2,
+    distance: 35,
+    luggage: 2,
     cost: 45,
+    currency: "OMR",
+    paymentStatus: "paid",
+    transferType: "airport_transfer",
     status: "assigned",
   },
   {
     id: "TRF-0066",
     customer: "Ahmed Al-Farsi",
+    customerPhone: "+968 9234 5678",
     vehicle: "Mercedes V-Class",
     vehiclePlate: "OM 5678",
     driver: "Khalfan Rashdi",
+    driverPhone: "+968 9234 5678",
     pickup: "DXB Airport T3",
     dropoff: "JW Marriott Dubai",
     dateTime: "2024-08-10 19:00",
     pax: 1,
+    distance: 120,
+    luggage: 1,
     cost: 80,
+    currency: "OMR",
+    paymentStatus: "paid",
+    transferType: "airport_transfer",
     status: "completed",
   },
   {
     id: "TRF-0065",
     customer: "Mohammed Qasim",
+    customerPhone: "+968 9345 6789",
     vehicle: "Toyota Camry",
     vehiclePlate: "OM 9012",
     driver: "Hamood Al-Farsi",
+    driverPhone: "+968 9345 6789",
     pickup: "CDG Airport",
     dropoff: "Pullman Paris",
     dateTime: "2024-08-22 10:45",
     pax: 3,
+    distance: 50,
+    luggage: 3,
     cost: 95,
+    currency: "OMR",
+    paymentStatus: "advance",
+    transferType: "airport_transfer",
     status: "assigned",
   },
   {
     id: "TRF-0064",
     customer: "Zainab Ibrahim",
+    customerPhone: "+968 9456 7890",
     vehicle: "Toyota Land Cruiser",
     vehiclePlate: "OM 3456",
     driver: "Unassigned",
+    driverPhone: "+968 9456 7890",
     pickup: "CAI Airport",
     dropoff: "Marriott Cairo",
     dateTime: "2024-08-28 09:00",
     pax: 3,
+    distance: 45,
+    luggage: 2,
     cost: 120,
+    currency: "OMR",
+    paymentStatus: "pending",
+    transferType: "airport_transfer",
     status: "assigned",
   },
   {
     id: "TRF-0063",
     customer: "Khalid Al-Rashid",
+    customerPhone: "+968 9567 8901",
     vehicle: "Coaster Bus",
     vehiclePlate: "OM 7890",
     driver: "Salim Badr",
+    driverPhone: "+968 9567 8901",
     pickup: "AUH Airport",
     dropoff: "Park Hyatt Sydney",
     dateTime: "2024-09-01 16:00",
     pax: 15,
+    distance: 150,
+    luggage: 10,
     cost: 250,
+    currency: "OMR",
+    paymentStatus: "partial",
+    transferType: "airport_transfer",
     status: "cancelled",
   },
 ];
@@ -300,7 +347,24 @@ export default function TransportationPage() {
     mockTransfers[0],
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [viewingTransfer, setViewingTransfer] = useState<Transfer | null>(null);
   const itemsPerPage = 3;
+
+  const paymentStatusConfig = {
+    pending: { label: "Pending", color: "bg-yellow-100 text-yellow-700", icon: Clock },
+    advance: { label: "Advance", color: "bg-blue-100 text-blue-700", icon: DollarSign },
+    partial: { label: "Partial", color: "bg-orange-100 text-orange-700", icon: AlertCircle },
+    paid: { label: "Paid", color: "bg-green-100 text-green-700", icon: CheckCircle },
+  };
+
+  const transferTypeConfig = {
+    airport_transfer: { label: "Airport Transfer", color: "bg-blue-100 text-blue-700", icon: Plane },
+    city_tour: { label: "City Tour", color: "bg-green-100 text-green-700", icon: MapPin },
+    intercity: { label: "Intercity", color: "bg-purple-100 text-purple-700", icon: Navigation },
+    hourly: { label: "Hourly", color: "bg-yellow-100 text-yellow-700", icon: Clock },
+    other: { label: "Other", color: "bg-gray-100 text-gray-700", icon: Truck },
+  };
 
   // Filter transfers
   const filteredTransfers = mockTransfers.filter(
@@ -378,7 +442,7 @@ export default function TransportationPage() {
             Wednesday, 12 August 2026
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+        <button onClick={() => setShowTransferModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
           <Plus className="w-4 h-4" />
           <span>New Transfer</span>
         </button>
@@ -404,7 +468,7 @@ export default function TransportationPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Today's Transfers</p>
+              <p className="text-sm text-gray-500">Today&apos;s Transfers</p>
               <p className="text-2xl font-bold text-gray-900">
                 {todayTransfers}
               </p>
@@ -709,6 +773,163 @@ export default function TransportationPage() {
           })}
         </div>
       </div>
+
+      {/* New Transfer Modal */}
+      {showTransferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">New Transfer Booking</h2>
+              <button onClick={() => setShowTransferModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Customer Name</label>
+                  <input type="text" placeholder="Customer name" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Customer Phone</label>
+                  <input type="tel" placeholder="+968 XXXX XXXX" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Transfer Type</label>
+                  <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="airport_transfer">Airport Transfer</option>
+                    <option value="city_tour">City Tour</option>
+                    <option value="intercity">Intercity</option>
+                    <option value="hourly">Hourly</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Vehicle Type</label>
+                  <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="van">Van</option>
+                    <option value="bus">Bus</option>
+                    <option value="luxury">Luxury</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Pickup Location</label>
+                  <input type="text" placeholder="e.g. MCT Airport" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Dropoff Location</label>
+                  <input type="text" placeholder="e.g. Grand Hyatt Muscat" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date & Time</label>
+                  <input type="datetime-local" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Passengers</label>
+                  <input type="number" placeholder="1" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Luggage</label>
+                  <input type="number" placeholder="0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Cost (OMR)</label>
+                  <input type="number" placeholder="0.00" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Assign Driver</label>
+                  <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Unassigned</option>
+                    {mockDrivers.filter((d) => d.status === "available").map((driver) => (
+                      <option key={driver.id} value={driver.name}>{driver.name} — {driver.vehicle}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Status</label>
+                  <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="pending">Pending</option>
+                    <option value="advance">Advance</option>
+                    <option value="partial">Partial</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                  <textarea rows={3} placeholder="Flight details, special requests..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setShowTransferModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">Cancel</button>
+              <button onClick={() => setShowTransferModal(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"><Save className="w-4 h-4" />Save Draft</button>
+              <button onClick={() => setShowTransferModal(false)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"><Send className="w-4 h-4" />Confirm Booking</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Transfer Modal */}
+      {viewingTransfer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Transfer Details</h2>
+                <p className="text-sm text-gray-500">{viewingTransfer.id}</p>
+              </div>
+              <button onClick={() => setViewingTransfer(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Customer</p>
+                    <p className="text-lg font-semibold text-gray-900">{viewingTransfer.customer}</p>
+                    <p className="text-sm text-gray-500">{viewingTransfer.customerPhone}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusConfig[viewingTransfer.status].color}`}>{statusConfig[viewingTransfer.status].label}</span>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${paymentStatusConfig[viewingTransfer.paymentStatus].color}`}>{paymentStatusConfig[viewingTransfer.paymentStatus].label}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Transfer Type</p><p className="text-sm font-medium text-gray-900">{transferTypeConfig[viewingTransfer.transferType].label}</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Vehicle</p><p className="text-sm font-medium text-gray-900">{viewingTransfer.vehicle} ({viewingTransfer.vehiclePlate})</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Driver</p><p className="text-sm font-medium text-gray-900">{viewingTransfer.driver}</p><p className="text-xs text-gray-500">{viewingTransfer.driverPhone}</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Date & Time</p><p className="text-sm font-medium text-gray-900">{formatDate(viewingTransfer.dateTime)}</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Route</p><p className="text-sm font-medium text-gray-900">{viewingTransfer.pickup}</p><p className="text-xs text-gray-500">↓ {viewingTransfer.dropoff}</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-xs text-gray-500">Distance / Pax / Luggage</p><p className="text-sm font-medium text-gray-900">{viewingTransfer.distance} km / {viewingTransfer.pax} pax / {viewingTransfer.luggage} bags</p></div>
+                </div>
+                {viewingTransfer.notes && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4"><p className="text-sm text-blue-700">{viewingTransfer.notes}</p></div>
+                )}
+                <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Total Amount</span>
+                    <span className="text-lg font-bold text-gray-900">{viewingTransfer.currency} {viewingTransfer.cost.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setViewingTransfer(null)} className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">Close</button>
+              {viewingTransfer.status === "assigned" && (
+                <button onClick={() => setViewingTransfer(null)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"><CheckCircle className="w-4 h-4" />Mark In Progress</button>
+              )}
+              {viewingTransfer.status === "in-progress" && (
+                <button onClick={() => setViewingTransfer(null)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"><CheckCircle className="w-4 h-4" />Mark Completed</button>
+              )}
+              {viewingTransfer.status !== "completed" && viewingTransfer.status !== "cancelled" && (
+                <button onClick={() => setViewingTransfer(null)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium shadow-sm"><XCircle className="w-4 h-4" />Cancel</button>
+              )}
+              <button onClick={() => setViewingTransfer(null)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"><Mail className="w-4 h-4" />Send to Customer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

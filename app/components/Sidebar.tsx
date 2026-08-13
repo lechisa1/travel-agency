@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -14,10 +14,21 @@ import {
   Receipt,
   Shield,
   Search,
+  Settings,
+  DollarSign,
+  CalendarDays,
+  FileSearch,
+  Activity,
+  Package,
+  UserPlus,
+  FileCheck,
+  Map,
   ChevronDown,
   ChevronRight,
   Building2,
   BarChart3,
+  Car,
+  Wrench,
 } from "lucide-react";
 interface MenuItem {
   name: string;
@@ -42,7 +53,65 @@ const menuItems: MenuItem[] = [
       { name: "Visa Management", icon: <FileText size={18} />, href: "/visa" },
       { name: "Flight Booking", icon: <Plane size={18} />, href: "/flights" },
       { name: "Hotel Booking", icon: <Hotel size={18} />, href: "/hotels" },
-      { name: "Transportation", icon: <Truck size={18} />, href: "/transport" },
+      {
+        name: "Transportation",
+        icon: <Truck size={18} />,
+        href: "/transport",
+        subItems: [
+          { name: "Transfers", icon: <Truck size={18} />, href: "/transport" },
+          {
+            name: "Drivers",
+            icon: <Users size={18} />,
+            href: "/transport/drivers",
+          },
+          {
+            name: "Vehicles",
+            icon: <Car size={18} />,
+            href: "/transport/vehicles",
+          },
+          {
+            name: "Maintenance Logs",
+            icon: <Wrench size={18} />,
+            href: "/transport/maintenance",
+          },
+        ],
+      },
+      {
+        name: "Packages & Tours",
+        icon: <Package size={18} />,
+        href: "/packages",
+      },
+      {
+        name: "Itinerary Builder",
+        icon: <Map size={18} />,
+        href: "/itinerary",
+      },
+      {
+        name: "Group Bookings",
+        icon: <Users size={18} />,
+        href: "/groups",
+      },
+    ],
+  },
+  {
+    name: "SALES",
+    icon: null,
+    subItems: [
+      {
+        name: "CRM & Leads",
+        icon: <UserPlus size={18} />,
+        href: "/crm",
+      },
+      {
+        name: "Quotations & Proformas",
+        icon: <FileCheck size={18} />,
+        href: "/quotations",
+      },
+      {
+        name: "Insurance",
+        icon: <Shield size={18} />,
+        href: "/insurance",
+      },
     ],
   },
   {
@@ -55,6 +124,22 @@ const menuItems: MenuItem[] = [
         href: "/accounting",
       },
       { name: "Invoices", icon: <Receipt size={18} />, href: "/invoices" },
+      {
+        name: "Commission",
+        icon: <DollarSign size={18} />,
+        href: "/commission",
+      },
+    ],
+  },
+  {
+    name: "VENDORS",
+    icon: null,
+    subItems: [
+      {
+        name: "Suppliers & Vendors",
+        icon: <Building2 size={18} />,
+        href: "/suppliers",
+      },
     ],
   },
   {
@@ -65,11 +150,67 @@ const menuItems: MenuItem[] = [
       { name: "Reports", icon: <BarChart3 size={18} />, href: "/reports" },
     ],
   },
+  {
+    name: "FLEET MANAGEMENT",
+    icon: null,
+    subItems: [
+      {
+        name: "Drivers",
+        icon: <Users size={18} />,
+        href: "/transport/drivers",
+      },
+      {
+        name: "Vehicles",
+        icon: <Car size={18} />,
+        href: "/transport/vehicles",
+      },
+      {
+        name: "Maintenance Logs",
+        icon: <Wrench size={18} />,
+        href: "/transport/maintenance",
+      },
+    ],
+  },
+  {
+    name: "SYSTEM",
+    icon: null,
+    subItems: [
+      { name: "Settings", icon: <Settings size={18} />, href: "/settings" },
+      {
+        name: "Multi-Currency",
+        icon: <DollarSign size={18} />,
+        href: "/multi-currency",
+      },
+      {
+        name: "Calendar",
+        icon: <CalendarDays size={18} />,
+        href: "/calendar",
+      },
+      {
+        name: "Documents",
+        icon: <FileSearch size={18} />,
+        href: "/documents",
+      },
+      {
+        name: "Audit Logs",
+        icon: <Activity size={18} />,
+        href: "/audit",
+      },
+    ],
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [expandedItems, setExpandedItems] = useState<string[]>(["OPERATIONS"]);
+  const router = useRouter();
+  const [expandedItems, setExpandedItems] = useState<string[]>([
+    "OPERATIONS",
+    "SALES",
+    "FINANCE",
+    "VENDORS",
+    "SYSTEM",
+    "fLEET MANAGEMENT",
+  ]);
 
   const toggleExpand = (name: string) => {
     setExpandedItems((prev) =>
@@ -120,7 +261,13 @@ export default function Sidebar() {
             return (
               <div key={item.name} className="mb-2">
                 <button
-                  onClick={() => toggleExpand(item.name)}
+                  onClick={() => {
+                    if (item.href) {
+                      router.push(item.href);
+                    } else {
+                      toggleExpand(item.name);
+                    }
+                  }}
                   className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors"
                 >
                   <span>{item.name}</span>

@@ -16,8 +16,6 @@ import {
   User,
   Building2,
   Phone,
-  Mail as MailIcon,
-  Globe,
   CheckCircle,
   Clock,
   XCircle,
@@ -26,11 +24,13 @@ import {
   Edit2,
   Trash2,
   MoreVertical,
-  CreditCard,
-  Banknote,
   QrCode,
   TrendingUp,
   TrendingDown,
+  X,
+  Save,
+  Send,
+  CreditCard,
 } from "lucide-react";
 
 // Types
@@ -247,18 +247,23 @@ const statusConfig = {
 
 export default function InvoicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(
     mockInvoices[0],
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const itemsPerPage = 4;
 
   // Filter invoices
-  const filteredInvoices = mockInvoices.filter(
-    (invoice) =>
+  const filteredInvoices = mockInvoices.filter((invoice) => {
+    const matchesSearch =
       invoice.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customer.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      invoice.customer.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      selectedStatus === "all" || invoice.status === selectedStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   // Pagination
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -300,11 +305,63 @@ export default function InvoicesPage() {
             Wednesday, 12 August 2026
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-            <Plus className="w-4 h-4" />
-            <span>New Invoice</span>
-          </button>
+        <button
+          onClick={() => setShowInvoiceModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          <span>New Invoice</span>
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Invoices</p>
+              <p className="text-2xl font-bold text-gray-900">{mockInvoices.length}</p>
+            </div>
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Paid</p>
+              <p className="text-2xl font-bold text-green-600">{mockInvoices.filter((i) => i.status === "paid").length}</p>
+            </div>
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-bold text-yellow-600">{mockInvoices.filter((i) => i.status === "pending" || i.status === "partial").length}</p>
+            </div>
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Revenue</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(mockInvoices.reduce((sum, i) => sum + i.total, 0))}</p>
+            </div>
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-purple-600" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -328,6 +385,17 @@ export default function InvoicesPage() {
                     className="pl-9 pr-4 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-36 lg:w-48"
                   />
                 </div>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Status</option>
+                  <option value="paid">Paid</option>
+                  <option value="partial">Partial</option>
+                  <option value="pending">Pending</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
                 <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                   <Filter className="w-4 h-4 text-gray-500" />
                 </button>
@@ -451,6 +519,12 @@ export default function InvoicesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button onClick={() => setSelectedInvoice(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                    <Edit2 className="w-4 h-4 text-gray-500" />
+                  </button>
                   <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                     <Printer className="w-4 h-4 text-gray-500" />
                   </button>
@@ -460,6 +534,11 @@ export default function InvoicesPage() {
                   <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                     <Download className="w-4 h-4 text-gray-500" />
                   </button>
+                  {selectedInvoice.status !== "paid" && selectedInvoice.status !== "cancelled" && (
+                    <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                      <CreditCard className="w-4 h-4 text-green-600" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -648,6 +727,74 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
+
+      {/* New Invoice Modal */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">New Invoice</h2>
+              <button onClick={() => setShowInvoiceModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Customer</label>
+                  <input type="text" placeholder="Customer name" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Issue Date</label>
+                  <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
+                  <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Currency</label>
+                  <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="OMR">OMR</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Service Description</label>
+                  <input type="text" placeholder="e.g. UK Visa Application" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity</label>
+                  <input type="number" placeholder="1" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Unit Price</label>
+                  <input type="number" placeholder="0.00" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                  <textarea rows={3} placeholder="Payment terms, special instructions..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setShowInvoiceModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                Cancel
+              </button>
+              <button onClick={() => setShowInvoiceModal(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                <Save className="w-4 h-4" />
+                Save Draft
+              </button>
+              <button onClick={() => setShowInvoiceModal(false)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm">
+                <Send className="w-4 h-4" />
+                Send Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -41,7 +41,7 @@ const monthOverMonthChange = (
   100
 ).toFixed(1);
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
@@ -56,7 +56,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function MonthlyBookingsChart() {
-  const [timeRange, setTimeRange] = useState("2024");
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
 
   // Color based on value
@@ -145,7 +144,7 @@ export default function MonthlyBookingsChart() {
             <Bar
               dataKey="bookings"
               radius={[4, 4, 0, 0]}
-              onMouseEnter={(data) => setHoveredBar(data.month)}
+              onMouseEnter={(data: { payload?: { month?: string } }) => setHoveredBar(data.payload?.month ?? null)}
               onMouseLeave={() => setHoveredBar(null)}
             >
               {monthlyData.map((entry, index) => (

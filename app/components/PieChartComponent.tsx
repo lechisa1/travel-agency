@@ -17,7 +17,7 @@ const data = [
   { name: "Transport", value: 14, color: "#f59e0b" },
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number }> }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
