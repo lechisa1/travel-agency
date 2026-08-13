@@ -17,8 +17,8 @@ import {
   ChevronDown,
   ChevronRight,
   Building2,
+  BarChart3,
 } from "lucide-react";
-
 interface MenuItem {
   name: string;
   icon: React.ReactNode;
@@ -43,13 +43,26 @@ const menuItems: MenuItem[] = [
       { name: "Flight Booking", icon: <Plane size={18} />, href: "/flights" },
       { name: "Hotel Booking", icon: <Hotel size={18} />, href: "/hotels" },
       { name: "Transportation", icon: <Truck size={18} />, href: "/transport" },
+    ],
+  },
+  {
+    name: "FINANCE",
+    icon: null,
+    subItems: [
       {
         name: "Accounting",
         icon: <Calculator size={18} />,
         href: "/accounting",
       },
       { name: "Invoices", icon: <Receipt size={18} />, href: "/invoices" },
-      { name: "Admin", icon: <Shield size={18} />, href: "/admin" },
+    ],
+  },
+  {
+    name: "Administration",
+    icon: null,
+    subItems: [
+      { name: "Staff & Roles", icon: <Shield size={18} />, href: "/admin" },
+      { name: "Reports", icon: <BarChart3 size={18} />, href: "/reports" },
     ],
   },
 ];

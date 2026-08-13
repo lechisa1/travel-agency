@@ -3,7 +3,7 @@ import DashboardStats from "../components/DashboardStats";
 import RevenueChart from "../components/RevenueChart";
 import PieChartComponent from "../components/PieChartComponent";
 import RecentActivity from "../components/RecentActivity";
-
+import MonthlyBookingsChart from "../components/MonthlyBookingsChart";
 export default function Home() {
   return (
     <>
@@ -17,7 +17,9 @@ export default function Home() {
           <PieChartComponent />
         </div>
       </div>
-
+      <div className="mt-6">
+        <MonthlyBookingsChart />
+      </div>
       <div className="mt-6">
         <RecentActivity />
       </div>
