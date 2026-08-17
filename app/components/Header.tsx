@@ -209,7 +209,7 @@ export default function Header() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        Omar Al-Rashidi
+                        Lechisa Bedasa
                       </p>
                       <p className="text-xs text-gray-500">Administrator</p>
                     </div>

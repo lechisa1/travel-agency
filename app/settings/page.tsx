@@ -145,6 +145,13 @@ export default function SettingsPage() {
   const [currencySettings, setCurrencySettings] = useState<CurrencySetting>(mockCurrencySettings);
   const [showApiKey, setShowApiKey] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [showAddTaxModal, setShowAddTaxModal] = useState(false);
+  const [newTax, setNewTax] = useState({
+    name: "",
+    rate: "",
+    type: "percentage" as "percentage" | "fixed",
+    applicableTo: [] as string[],
+  });
 
   const tabs = [
     { id: "company", label: "Company Profile", icon: Building2 },
@@ -167,6 +174,23 @@ export default function SettingsPage() {
     setTaxSettings((prev) =>
       prev.map((t) => (t.id === id ? { ...t, enabled: !t.enabled } : t)),
     );
+  };
+
+  const addTaxRule = () => {
+    if (!newTax.name.trim() || !newTax.rate) return;
+    setTaxSettings((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        name: newTax.name,
+        rate: parseFloat(newTax.rate),
+        type: newTax.type,
+        applicableTo: newTax.applicableTo.length > 0 ? newTax.applicableTo : ["Flights", "Hotels", "Transport", "Visa"],
+        enabled: true,
+      },
+    ]);
+    setNewTax({ name: "", rate: "", type: "percentage", applicableTo: [] });
+    setShowAddTaxModal(false);
   };
 
   const updateEmailField = (field: keyof EmailConfig, value: string) => {
@@ -349,7 +373,7 @@ export default function SettingsPage() {
                   <h3 className="text-lg font-semibold text-gray-900">Tax & VAT Settings</h3>
                   <p className="text-sm text-gray-500">Configure taxes applied to bookings and services</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                <button onClick={() => setShowAddTaxModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
                   <Plus className="w-4 h-4" />
                   Add Tax Rule
                 </button>
@@ -806,6 +830,91 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {showAddTaxModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Add Tax Rule</h3>
+              <p className="text-sm text-gray-500 mt-1">Create a new tax or VAT rule</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tax Name</label>
+                <input
+                  type="text"
+                  value={newTax.name}
+                  onChange={(e) => setNewTax({ ...newTax, name: e.target.value })}
+                  placeholder="e.g. VAT"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rate</label>
+                  <input
+                    type="number"
+                    value={newTax.rate}
+                    onChange={(e) => setNewTax({ ...newTax, rate: e.target.value })}
+                    placeholder="5"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={newTax.type}
+                    onChange={(e) => setNewTax({ ...newTax, type: e.target.value as "percentage" | "fixed" })}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Fixed</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Applicable To</label>
+                <div className="flex flex-wrap gap-2">
+                  {["Flights", "Hotels", "Transport", "Visa", "Packages", "Insurance"].map((item) => (
+                    <button
+                      key={item}
+                      onClick={() =>
+                        setNewTax((prev) => ({
+                          ...prev,
+                          applicableTo: prev.applicableTo.includes(item)
+                            ? prev.applicableTo.filter((i) => i !== item)
+                            : [...prev.applicableTo, item],
+                        }))
+                      }
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        newTax.applicableTo.includes(item)
+                          ? "bg-blue-50 border-blue-200 text-blue-700"
+                          : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowAddTaxModal(false)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addTaxRule}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Add Rule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

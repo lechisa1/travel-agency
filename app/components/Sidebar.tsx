@@ -211,6 +211,7 @@ export default function Sidebar() {
     "SYSTEM",
     "fLEET MANAGEMENT",
   ]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleExpand = (name: string) => {
     setExpandedItems((prev) =>
@@ -224,6 +225,23 @@ export default function Sidebar() {
     if (!href) return false;
     return pathname === href || pathname?.startsWith(href + "/");
   };
+
+  const matchesSearch = (text: string) =>
+    text.toLowerCase().includes(searchQuery.toLowerCase());
+
+  const filteredMenuItems = menuItems
+    .map((item) => {
+      if (item.subItems) {
+        const filteredSubItems = item.subItems.filter((subItem) =>
+          matchesSearch(subItem.name),
+        );
+        if (searchQuery && filteredSubItems.length === 0) return null;
+        return { ...item, subItems: filteredSubItems };
+      }
+      if (searchQuery && !matchesSearch(item.name)) return null;
+      return item;
+    })
+    .filter(Boolean) as MenuItem[];
 
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -248,6 +266,8 @@ export default function Sidebar() {
           <input
             type="text"
             placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -255,9 +275,10 @@ export default function Sidebar() {
 
       {/* Menu */}
       <nav className="flex-1 overflow-y-auto px-3 py-2">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           if (item.subItems) {
-            const isExpanded = expandedItems.includes(item.name);
+            const isExpanded =
+              expandedItems.includes(item.name) || searchQuery.length > 0;
             return (
               <div key={item.name} className="mb-2">
                 <button
@@ -352,7 +373,7 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              Omar Al-Rashidi
+              Lechisa Bedasa
             </p>
             <p className="text-xs text-gray-500">Administrator</p>
           </div>

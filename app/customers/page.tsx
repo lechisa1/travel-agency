@@ -22,6 +22,8 @@ import {
   Download,
   Edit2,
   Trash2,
+  X,
+  Save,
 } from "lucide-react";
 
 // Types
@@ -507,6 +509,8 @@ export default function CustomersPage() {
   );
   const [activeTab, setActiveTab] = useState("Profile");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const itemsPerPage = 4;
 
   // Filter customers based on search
@@ -543,7 +547,7 @@ export default function CustomersPage() {
               Wednesday, 12 August 2026
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <button onClick={() => { setEditingCustomer(null); setShowCustomerModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
             <span>New Customer</span>
           </button>
@@ -728,7 +732,7 @@ export default function CustomersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <button onClick={() => { setEditingCustomer(selectedCustomer); setShowCustomerModal(true); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                   <Edit2 className="w-4 h-4 text-gray-400" />
                 </button>
                 <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
@@ -928,6 +932,78 @@ export default function CustomersPage() {
             {activeTab === "Documents" && (
               <DocumentsTab customerId={selectedCustomer.id} />
             )}
+          </div>
+        </div>
+      )}
+
+      {showCustomerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">{editingCustomer ? "Edit Customer" : "New Customer"}</h2>
+              <button onClick={() => setShowCustomerModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                  <input type="text" placeholder="Customer name" defaultValue={editingCustomer?.name} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Number</label>
+                  <input type="text" placeholder="e.g. P12847364" defaultValue={editingCustomer?.passportNumber} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nationality</label>
+                  <input type="text" placeholder="e.g. Omani" defaultValue={editingCustomer?.nationality} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                  <input type="email" placeholder="email@example.com" defaultValue={editingCustomer?.email} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+                  <input type="tel" placeholder="+968 XXXX XXXX" defaultValue={editingCustomer?.phone} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
+                  <input type="date" defaultValue={editingCustomer?.dateOfBirth} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Issue Date</label>
+                  <input type="date" defaultValue={editingCustomer?.passportIssueDate} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Expiry Date</label>
+                  <input type="date" defaultValue={editingCustomer?.passportExpiryDate} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Issue Country</label>
+                  <input type="text" placeholder="e.g. Oman" defaultValue={editingCustomer?.issueCountry} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                  <select defaultValue={editingCustomer?.status || "active"} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                  <textarea rows={3} placeholder="Customer notes..." defaultValue={editingCustomer?.notes} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setShowCustomerModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">Cancel</button>
+              <button onClick={() => setShowCustomerModal(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                <Save className="w-4 h-4" />
+                {editingCustomer ? "Update Customer" : "Add Customer"}
+              </button>
+            </div>
           </div>
         </div>
       )}

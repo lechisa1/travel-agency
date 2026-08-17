@@ -61,9 +61,9 @@ interface Permission {
 const mockStaff: Staff[] = [
   {
     id: "EMP-001",
-    name: "Omar Al-Rashidi",
+    name: "Lechisa Bedasa",
     role: "Administrator",
-    email: "omar@agency.com",
+    email: "lechisa@agency.com",
     phone: "+968 9100 0001",
     dateJoined: "2021-03-01",
     status: "active",
