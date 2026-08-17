@@ -28,6 +28,8 @@ import {
   Phone,
   Mail,
   ExternalLink,
+  Save,
+  X,
 } from "lucide-react";
 
 // Types
@@ -353,15 +355,28 @@ const statusConfig = {
 const statusFilters = ["All", "Submitted", "In Review", "Approved", "Rejected"];
 
 export default function VisaManagementPage() {
+  const [applications, setApplications] = useState<VisaApplication[]>(mockApplications);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
-  const [selectedApplication, setSelectedApplication] =
-    useState<VisaApplication | null>(mockApplications[0]);
+  const [selectedApplication, setSelectedApplication] = useState<VisaApplication | null>(applications[0]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [editingApplication, setEditingApplication] = useState<VisaApplication | null>(null);
+  const [applicationForm, setApplicationForm] = useState({
+    applicantName: "",
+    destination: "",
+    visaType: "",
+    passportNumber: "",
+    nationality: "",
+    visaFee: "",
+    serviceCharge: "",
+    notes: "",
+    status: "submitted" as VisaApplication["status"],
+  });
   const itemsPerPage = 4;
 
   // Filter applications
-  const filteredApplications = mockApplications.filter((app) => {
+  const filteredApplications = applications.filter((app) => {
     const matchesSearch =
       app.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -384,7 +399,7 @@ export default function VisaManagementPage() {
   );
 
   // Status counts
-  const statusCounts = mockApplications.reduce(
+  const statusCounts = applications.reduce(
     (acc, app) => {
       acc[app.status] = (acc[app.status] || 0) + 1;
       return acc;
@@ -420,6 +435,92 @@ export default function VisaManagementPage() {
     return `${diffDays} days ago`;
   };
 
+  const openNewApplicationModal = () => {
+    setEditingApplication(null);
+    setApplicationForm({
+      applicantName: "",
+      destination: "",
+      visaType: "",
+      passportNumber: "",
+      nationality: "",
+      visaFee: "",
+      serviceCharge: "",
+      notes: "",
+      status: "submitted",
+    });
+    setShowApplicationModal(true);
+  };
+
+  const openEditApplicationModal = (application: VisaApplication) => {
+    setEditingApplication(application);
+    setApplicationForm({
+      applicantName: application.applicantName,
+      destination: application.destination,
+      visaType: application.visaType,
+      passportNumber: application.passportNumber,
+      nationality: application.nationality,
+      visaFee: application.visaFee.toString(),
+      serviceCharge: application.serviceCharge.toString(),
+      notes: application.notes || "",
+      status: application.status,
+    });
+    setShowApplicationModal(true);
+  };
+
+  const handleSaveApplication = () => {
+    if (!applicationForm.applicantName.trim() || !applicationForm.destination.trim()) return;
+
+    const visaFee = parseFloat(applicationForm.visaFee) || 0;
+    const serviceCharge = parseFloat(applicationForm.serviceCharge) || 0;
+
+    if (editingApplication) {
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === editingApplication.id
+            ? {
+                ...app,
+                ...applicationForm,
+                visaFee,
+                serviceCharge,
+                totalFee: visaFee + serviceCharge,
+              }
+            : app,
+        ),
+      );
+    } else {
+      const newApplication: VisaApplication = {
+        id: `VIS-${Date.now().toString().slice(-4)}`,
+        applicantName: applicationForm.applicantName,
+        destination: applicationForm.destination,
+        visaType: applicationForm.visaType,
+        passportNumber: applicationForm.passportNumber,
+        nationality: applicationForm.nationality,
+        visaFee,
+        serviceCharge,
+        totalFee: visaFee + serviceCharge,
+        appliedDate: new Date().toISOString().split("T")[0],
+        status: applicationForm.status,
+        documentChecklist: [],
+        notes: applicationForm.notes,
+      };
+      setApplications((prev) => [newApplication, ...prev]);
+      setSelectedApplication(newApplication);
+    }
+    setShowApplicationModal(false);
+    setApplicationForm({
+      applicantName: "",
+      destination: "",
+      visaType: "",
+      passportNumber: "",
+      nationality: "",
+      visaFee: "",
+      serviceCharge: "",
+      notes: "",
+      status: "submitted",
+    });
+    setEditingApplication(null);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Main Content */}
@@ -434,7 +535,7 @@ export default function VisaManagementPage() {
               Wednesday, 12 August 2026
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <button onClick={openNewApplicationModal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
             <span>New Application</span>
           </button>
@@ -796,7 +897,7 @@ export default function VisaManagementPage() {
 
           {/* Panel Footer Actions */}
           <div className="p-4 border-t border-gray-200 flex gap-2">
-            <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+            <button onClick={() => selectedApplication && openEditApplicationModal(selectedApplication)} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
               Update Status
             </button>
             <button className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
@@ -805,6 +906,71 @@ export default function VisaManagementPage() {
             <button className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
               <Mail className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {showApplicationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">{editingApplication ? "Edit Application" : "New Application"}</h2>
+              <button onClick={() => setShowApplicationModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Applicant Name</label>
+                  <input type="text" placeholder="Full name" value={applicationForm.applicantName} onChange={(e) => setApplicationForm({ ...applicationForm, applicantName: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Destination</label>
+                  <input type="text" placeholder="e.g. United Kingdom" value={applicationForm.destination} onChange={(e) => setApplicationForm({ ...applicationForm, destination: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Visa Type</label>
+                  <input type="text" placeholder="e.g. Visit Visa" value={applicationForm.visaType} onChange={(e) => setApplicationForm({ ...applicationForm, visaType: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Number</label>
+                  <input type="text" placeholder="e.g. P12847364" value={applicationForm.passportNumber} onChange={(e) => setApplicationForm({ ...applicationForm, passportNumber: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nationality</label>
+                  <input type="text" placeholder="e.g. Omani" value={applicationForm.nationality} onChange={(e) => setApplicationForm({ ...applicationForm, nationality: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Visa Fee (USD)</label>
+                  <input type="number" placeholder="0.00" value={applicationForm.visaFee} onChange={(e) => setApplicationForm({ ...applicationForm, visaFee: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Service Charge (OMR)</label>
+                  <input type="number" placeholder="0.00" value={applicationForm.serviceCharge} onChange={(e) => setApplicationForm({ ...applicationForm, serviceCharge: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                  <select value={applicationForm.status} onChange={(e) => setApplicationForm({ ...applicationForm, status: e.target.value as VisaApplication["status"] })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="submitted">Submitted</option>
+                    <option value="in-review">In Review</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                  <textarea rows={3} placeholder="Application notes..." value={applicationForm.notes} onChange={(e) => setApplicationForm({ ...applicationForm, notes: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button onClick={() => setShowApplicationModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={handleSaveApplication} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+                <Save className="w-4 h-4" />
+                {editingApplication ? "Update Application" : "Add Application"}
+              </button>
+            </div>
           </div>
         </div>
       )}

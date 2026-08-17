@@ -29,6 +29,8 @@ import {
   Edit2,
   Trash2,
   Eye,
+  Save,
+  X,
 } from "lucide-react";
 
 // Types
@@ -206,15 +208,28 @@ const roomTypeIcons: Record<string, string> = {
 };
 
 export default function HotelBookingPage() {
+  const [bookings, setBookings] = useState<HotelBooking[]>(mockBookings);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBooking, setSelectedBooking] = useState<HotelBooking | null>(
-    mockBookings[0],
-  );
+  const [selectedBooking, setSelectedBooking] = useState<HotelBooking | null>(bookings[0]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<HotelBooking | null>(null);
+  const [bookingForm, setBookingForm] = useState({
+    customer: "",
+    hotel: "",
+    city: "",
+    checkIn: "",
+    checkOut: "",
+    rooms: 1,
+    roomType: "Standard",
+    ratePerNight: 0,
+    status: "confirmed" as HotelBooking["status"],
+    voucherIssued: false,
+  });
   const itemsPerPage = 4;
 
   // Filter bookings
-  const filteredBookings = mockBookings.filter(
+  const filteredBookings = bookings.filter(
     (booking) =>
       booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -231,11 +246,11 @@ export default function HotelBookingPage() {
   );
 
   // Stats
-  const totalBookings = mockBookings.length;
-  const confirmedBookings = mockBookings.filter(
+  const totalBookings = bookings.length;
+  const confirmedBookings = bookings.filter(
     (b) => b.status === "confirmed",
   ).length;
-  const totalRevenue = mockBookings.reduce((sum, b) => sum + b.total, 0);
+  const totalRevenue = bookings.reduce((sum, b) => sum + b.total, 0);
 
   const formatDate = (date: string) => {
     const d = new Date(date);
@@ -268,6 +283,91 @@ export default function HotelBookingPage() {
     return stars.join("");
   };
 
+  const openNewBookingModal = () => {
+    setEditingBooking(null);
+    setBookingForm({
+      customer: "",
+      hotel: "",
+      city: "",
+      checkIn: "",
+      checkOut: "",
+      rooms: 1,
+      roomType: "Standard",
+      ratePerNight: 0,
+      status: "confirmed",
+      voucherIssued: false,
+    });
+    setShowBookingModal(true);
+  };
+
+  const openEditBookingModal = (booking: HotelBooking) => {
+    setEditingBooking(booking);
+    setBookingForm({
+      customer: booking.customer,
+      hotel: booking.hotel,
+      city: booking.city,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      rooms: booking.rooms,
+      roomType: booking.roomType,
+      ratePerNight: booking.ratePerNight,
+      status: booking.status,
+      voucherIssued: booking.voucherIssued,
+    });
+    setShowBookingModal(true);
+  };
+
+  const handleSaveBooking = () => {
+    if (!bookingForm.customer.trim() || !bookingForm.hotel.trim() || !bookingForm.checkIn || !bookingForm.checkOut) return;
+
+    const nights = Math.ceil(
+      (new Date(bookingForm.checkOut).getTime() - new Date(bookingForm.checkIn).getTime()) /
+      (1000 * 60 * 60 * 24)
+    );
+    const total = nights * bookingForm.rooms * bookingForm.ratePerNight;
+
+    if (editingBooking) {
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === editingBooking.id
+            ? { ...b, ...bookingForm, total, rooms: bookingForm.rooms, ratePerNight: bookingForm.ratePerNight }
+            : b,
+        ),
+      );
+    } else {
+      const newBooking: HotelBooking = {
+        id: `HTL-${Date.now().toString().slice(-4)}`,
+        customer: bookingForm.customer,
+        hotel: bookingForm.hotel,
+        city: bookingForm.city,
+        checkIn: bookingForm.checkIn,
+        checkOut: bookingForm.checkOut,
+        rooms: bookingForm.rooms,
+        roomType: bookingForm.roomType,
+        ratePerNight: bookingForm.ratePerNight,
+        total,
+        status: bookingForm.status,
+        voucherIssued: bookingForm.voucherIssued,
+      };
+      setBookings((prev) => [newBooking, ...prev]);
+      setSelectedBooking(newBooking);
+    }
+    setShowBookingModal(false);
+    setBookingForm({
+      customer: "",
+      hotel: "",
+      city: "",
+      checkIn: "",
+      checkOut: "",
+      rooms: 1,
+      roomType: "Standard",
+      ratePerNight: 0,
+      status: "confirmed",
+      voucherIssued: false,
+    });
+    setEditingBooking(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       {/* Header */}
@@ -278,7 +378,7 @@ export default function HotelBookingPage() {
             Wednesday, 12 August 2026
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+        <button onClick={openNewBookingModal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
           <Plus className="w-4 h-4" />
           <span>New Booking</span>
         </button>
@@ -410,6 +510,9 @@ export default function HotelBookingPage() {
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Voucher
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -480,6 +583,16 @@ export default function HotelBookingPage() {
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); openEditBookingModal(booking); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                          <Edit2 className="w-4 h-4 text-gray-400" />
+                        </button>
+                        <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                          <Trash2 className="w-4 h-4 text-gray-400" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -645,11 +758,85 @@ export default function HotelBookingPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
-  );
+
+    {showBookingModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">{editingBooking ? "Edit Booking" : "New Booking"}</h2>
+            <button onClick={() => setShowBookingModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Customer Name</label>
+                <input type="text" placeholder="Customer name" value={bookingForm.customer} onChange={(e) => setBookingForm({ ...bookingForm, customer: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Hotel</label>
+                <input type="text" placeholder="Hotel name" value={bookingForm.hotel} onChange={(e) => setBookingForm({ ...bookingForm, hotel: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">City</label>
+                <input type="text" placeholder="City" value={bookingForm.city} onChange={(e) => setBookingForm({ ...bookingForm, city: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Check-In</label>
+                <input type="date" value={bookingForm.checkIn} onChange={(e) => setBookingForm({ ...bookingForm, checkIn: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Check-Out</label>
+                <input type="date" value={bookingForm.checkOut} onChange={(e) => setBookingForm({ ...bookingForm, checkOut: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Rooms</label>
+                <input type="number" min="1" value={bookingForm.rooms} onChange={(e) => setBookingForm({ ...bookingForm, rooms: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Room Type</label>
+                <select value={bookingForm.roomType} onChange={(e) => setBookingForm({ ...bookingForm, roomType: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="Standard">Standard</option>
+                  <option value="Deluxe Double">Deluxe Double</option>
+                  <option value="Suite">Suite</option>
+                  <option value="Harbour View">Harbour View</option>
+                  <option value="Family Room">Family Room</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Rate per Night (OMR)</label>
+                <input type="number" min="0" step="0.01" value={bookingForm.ratePerNight} onChange={(e) => setBookingForm({ ...bookingForm, ratePerNight: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                <select value={bookingForm.status} onChange={(e) => setBookingForm({ ...bookingForm, status: e.target.value as HotelBooking["status"] })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="confirmed">Confirmed</option>
+                  <option value="tentative">Tentative</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 flex items-center gap-2">
+                <input type="checkbox" id="voucherIssued" checked={bookingForm.voucherIssued} onChange={(e) => setBookingForm({ ...bookingForm, voucherIssued: e.target.checked })} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                <label htmlFor="voucherIssued" className="text-sm text-gray-700">Voucher Issued</label>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+            <button onClick={() => setShowBookingModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+            <button onClick={handleSaveBooking} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+              <Save className="w-4 h-4" />
+              {editingBooking ? "Update Booking" : "Add Booking"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }

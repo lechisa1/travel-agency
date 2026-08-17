@@ -503,18 +503,20 @@ const getInitials = (name: string) => {
 };
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    mockCustomers[0],
+    customers[0],
   );
   const [activeTab, setActiveTab] = useState("Profile");
   const [currentPage, setCurrentPage] = useState(1);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerForm, setCustomerForm] = useState<Partial<Customer>>({});
   const itemsPerPage = 4;
 
   // Filter customers based on search
-  const filteredCustomers = mockCustomers.filter(
+  const filteredCustomers = customers.filter(
     (customer) =>
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.passportNumber
@@ -535,6 +537,56 @@ export default function CustomersPage() {
     setSelectedCustomer(customer);
   };
 
+  const openNewCustomerModal = () => {
+    setEditingCustomer(null);
+    setCustomerForm({
+      name: "",
+      passportNumber: "",
+      nationality: "",
+      email: "",
+      phone: "",
+      dateOfBirth: "",
+      passportIssueDate: "",
+      passportExpiryDate: "",
+      issueCountry: "",
+      status: "active",
+      notes: "",
+      isVIP: false,
+      bookings: 0,
+    });
+    setShowCustomerModal(true);
+  };
+
+  const openEditCustomerModal = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setCustomerForm({ ...customer });
+    setShowCustomerModal(true);
+  };
+
+  const handleSaveCustomer = () => {
+    if (!customerForm.name?.trim() || !customerForm.passportNumber?.trim()) return;
+    
+    if (editingCustomer) {
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === editingCustomer.id
+            ? { ...c, ...customerForm, id: c.id } as Customer
+            : c,
+        ),
+      );
+    } else {
+      const newCustomer: Customer = {
+        ...customerForm,
+        id: Date.now().toString(),
+      } as Customer;
+      setCustomers((prev) => [...prev, newCustomer]);
+      setSelectedCustomer(newCustomer);
+    }
+    setShowCustomerModal(false);
+    setCustomerForm({});
+    setEditingCustomer(null);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Main Content */}
@@ -547,7 +599,7 @@ export default function CustomersPage() {
               Wednesday, 12 August 2026
             </p>
           </div>
-          <button onClick={() => { setEditingCustomer(null); setShowCustomerModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+          <button onClick={openNewCustomerModal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
             <span>New Customer</span>
           </button>
@@ -732,7 +784,7 @@ export default function CustomersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => { setEditingCustomer(selectedCustomer); setShowCustomerModal(true); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <button onClick={() => openEditCustomerModal(selectedCustomer)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                   <Edit2 className="w-4 h-4 text-gray-400" />
                 </button>
                 <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
@@ -949,43 +1001,43 @@ export default function CustomersPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
-                  <input type="text" placeholder="Customer name" defaultValue={editingCustomer?.name} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="text" placeholder="Customer name" value={customerForm.name || ""} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Number</label>
-                  <input type="text" placeholder="e.g. P12847364" defaultValue={editingCustomer?.passportNumber} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="text" placeholder="e.g. P12847364" value={customerForm.passportNumber || ""} onChange={(e) => setCustomerForm({ ...customerForm, passportNumber: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Nationality</label>
-                  <input type="text" placeholder="e.g. Omani" defaultValue={editingCustomer?.nationality} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="text" placeholder="e.g. Omani" value={customerForm.nationality || ""} onChange={(e) => setCustomerForm({ ...customerForm, nationality: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                  <input type="email" placeholder="email@example.com" defaultValue={editingCustomer?.email} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="email" placeholder="email@example.com" value={customerForm.email || ""} onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
-                  <input type="tel" placeholder="+968 XXXX XXXX" defaultValue={editingCustomer?.phone} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="tel" placeholder="+968 XXXX XXXX" value={customerForm.phone || ""} onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
-                  <input type="date" defaultValue={editingCustomer?.dateOfBirth} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="date" value={customerForm.dateOfBirth || ""} onChange={(e) => setCustomerForm({ ...customerForm, dateOfBirth: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Issue Date</label>
-                  <input type="date" defaultValue={editingCustomer?.passportIssueDate} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="date" value={customerForm.passportIssueDate || ""} onChange={(e) => setCustomerForm({ ...customerForm, passportIssueDate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Passport Expiry Date</label>
-                  <input type="date" defaultValue={editingCustomer?.passportExpiryDate} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="date" value={customerForm.passportExpiryDate || ""} onChange={(e) => setCustomerForm({ ...customerForm, passportExpiryDate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Issue Country</label>
-                  <input type="text" placeholder="e.g. Oman" defaultValue={editingCustomer?.issueCountry} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input type="text" placeholder="e.g. Oman" value={customerForm.issueCountry || ""} onChange={(e) => setCustomerForm({ ...customerForm, issueCountry: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
-                  <select defaultValue={editingCustomer?.status || "active"} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <select value={customerForm.status || "active"} onChange={(e) => setCustomerForm({ ...customerForm, status: e.target.value as Customer["status"] })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                     <option value="pending">Pending</option>
@@ -993,13 +1045,13 @@ export default function CustomersPage() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
-                  <textarea rows={3} placeholder="Customer notes..." defaultValue={editingCustomer?.notes} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                  <textarea rows={3} placeholder="Customer notes..." value={customerForm.notes || ""} onChange={(e) => setCustomerForm({ ...customerForm, notes: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
                 </div>
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
               <button onClick={() => setShowCustomerModal(false)} className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">Cancel</button>
-              <button onClick={() => setShowCustomerModal(false)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
+              <button onClick={handleSaveCustomer} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm">
                 <Save className="w-4 h-4" />
                 {editingCustomer ? "Update Customer" : "Add Customer"}
               </button>
